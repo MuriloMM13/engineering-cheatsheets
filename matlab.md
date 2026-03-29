@@ -1,265 +1,207 @@
-# MATLAB Cheat Sheet
+# MATLAB Cheat Sheet — Advanced (Engineering)
 
 ---
 
-## 📊 Basic Plot
+## 📂 Read CSV (Simulation Data)
 
-Plot simples de um sinal.
+Importar dados típicos de simulação (ex: ngspice export).
 
-```matlab
-x = 0:0.1:10;
-y = sin(x);
+```matlab id="csv1"
+data = readtable('sim.csv');
 
-plot(x, y, 'LineWidth', 2);
-grid on;
-
-title('Sine Wave');
-xlabel('x');
-ylabel('sin(x)');
+time = data{:,1};
+vin  = data{:,4};
+vout = data{:,6};
+i    = data{:,8};
 ```
 
 ---
 
-## 📈 Multiple Plots
+## 📊 Plot Multiple Signals (Clean Style)
 
-Plotar várias curvas no mesmo gráfico.
+Plot organizado para análise.
 
-```matlab
-x = 0:0.1:10;
+```matlab id="plot_clean"
+plot(time, vin, 'LineWidth', 1.5); hold on;
+plot(time, vout, 'LineWidth', 1.5);
 
-plot(x, sin(x)); 
-hold on;
-plot(x, cos(x));
-
-legend('sin', 'cos');
+legend('Vin', 'Vout');
+xlabel('Time (s)');
+ylabel('Voltage (V)');
 grid on;
 ```
 
 ---
 
-## 🧩 Subplots
+## ⚡ Instantaneous Power
 
-Dividir a figura em múltiplos gráficos.
+Calcular potência instantânea.
 
-```matlab
-x = 0:0.1:10;
-
-subplot(2,1,1);
-plot(x, sin(x));
-title('sin');
-
-subplot(2,1,2);
-plot(x, cos(x));
-title('cos');
+```matlab id="power_inst"
+power = vout .* i;
+plot(time, power);
+title('Instantaneous Power');
 ```
 
 ---
 
-## 🎨 Plot Customization
+## 🔋 Average Power
 
-Alterar estilo e limites do gráfico.
+Calcular potência média ao longo do tempo.
 
-```matlab
-plot(x, sin(x), 'r--', 'LineWidth', 2);
-xlim([0 10]);
-ylim([-1 1]);
-grid on;
+```matlab id="power_avg"
+P_avg = mean(power);
 ```
 
 ---
 
-## 📂 Read CSV / Data
+## 🔋 Energy Calculation
 
-Importar dados de um arquivo CSV.
+Energia consumida (integração no tempo).
 
-```matlab
-data = readtable('data.csv');
-
-x = data.Var1;
-y = data.Var2;
-
-plot(x, y);
+```matlab id="energy"
+E = trapz(time, power);
 ```
 
 ---
 
-## 🔄 Table to Array
+## 📈 Detect Rising Edge Delay
 
-Converter tabela para array numérico.
+Encontrar delay entre entrada e saída.
 
-```matlab
-data = readtable('data.csv');
-array = table2array(data);
+```matlab id="delay"
+threshold = 0.5;
+
+t_in  = time(find(vin > threshold, 1));
+t_out = time(find(vout > threshold, 1));
+
+delay = t_out - t_in;
 ```
 
 ---
 
-## 🔢 Vectors & Matrices
+## 📉 Frequency Response (FFT Clean)
 
-Criar e manipular vetores e matrizes.
+Análise espectral mais útil.
 
-```matlab
-x = linspace(0, 10, 100);
-z = zeros(1, 10);
-o = ones(1, 10);
+```matlab id="fft_clean"
+Y = fft(vout);
+N = length(Y);
 
-A = [1 2; 3 4];
-B = A';
-```
-
----
-
-## ⚙️ Element-wise Operations
-
-Operações elemento a elemento (muito importante).
-
-```matlab
-x = 0:0.1:10;
-
-y1 = x.^2;
-y2 = sin(x) .* cos(x);
-```
-
----
-
-## 📉 FFT (Frequency Domain)
-
-Converter sinal para domínio da frequência.
-
-```matlab
-fs = 1000;
-t = 0:1/fs:1;
-signal = sin(2*pi*50*t);
-
-Y = fft(signal);
-f = (0:length(Y)-1)*fs/length(Y);
+f = (0:N-1)*(1/(time(2)-time(1)))/N;
 
 plot(f, abs(Y));
+xlim([0 max(f)/2]);
 ```
 
 ---
 
-## 📊 Moving Average Filter
+## 🧪 Noise / Signal RMS
 
-Suavizar um sinal com média móvel.
+Calcular valor RMS do sinal.
 
-```matlab
-window = 5;
-filtered = movmean(signal, window);
+```matlab id="rms"
+rms_val = rms(vout);
 ```
 
 ---
 
-## ⏱️ Time Signal
+## 📊 Peak Detection
 
-Criar eixo de tempo e sinal.
+Encontrar picos em sinais.
 
-```matlab
-fs = 1000;
-t = 0:1/fs:1;
+```matlab id="peaks"
+[pks, locs] = findpeaks(vout, time);
 
-signal = sin(2*pi*10*t);
+plot(time, vout); hold on;
+plot(locs, pks, 'o');
 ```
 
 ---
 
-## 📈 Linear Fit
+## 📉 Gain Calculation
 
-Ajuste linear de dados (regressão).
+Ganho entre entrada e saída.
 
-```matlab
-x = 1:10;
-y = 2*x + 3;
-
-p = polyfit(x, y, 1);
-y_fit = polyval(p, x);
-
-plot(x, y, 'o');
-hold on;
-plot(x, y_fit);
+```matlab id="gain"
+gain = max(vout) / max(vin);
 ```
 
 ---
 
-## 🔄 Interpolation
+## 📊 Smoothing (Better Filter)
 
-Interpolar pontos entre dados existentes.
+Filtro simples para reduzir ruído.
 
-```matlab
-x = 1:10;
-y = sin(x);
-
-xq = 1:0.1:10;
-yq = interp1(x, y, xq);
-
-plot(x, y, 'o', xq, yq, '-');
+```matlab id="smooth"
+vout_smooth = smoothdata(vout, 'movmean', 10);
 ```
 
 ---
 
-## 💾 Save Figure
+## 📁 Export Data (CSV)
 
-Salvar gráfico como imagem.
+Salvar resultados processados.
 
-```matlab
-exportgraphics(gcf, 'figure.png', 'Resolution', 300);
+```matlab id="export_csv"
+result = table(time, vin, vout, power);
+writetable(result, 'processed.csv');
 ```
 
 ---
 
-## 📁 Save Data
+## 📸 Publication-Style Plot
 
-Salvar variáveis em arquivo.
+Plot mais bonito para relatório.
 
-```matlab
-save('data.mat', 'x', 'y');
+```matlab id="pub_plot"
+figure;
+plot(time, vout, 'LineWidth', 2);
+
+xlabel('Time (s)');
+ylabel('Voltage (V)');
+title('Output Signal');
+
+grid on;
+set(gca, 'FontSize', 12);
 ```
 
 ---
 
-## 🧪 Debug
+## ⚡ Automatic Metrics Script (Template)
 
-Exibir valores e verificar dimensões.
+Template para análise completa.
 
-```matlab
-disp(x);
-fprintf('Value: %.2f\n', x(1));
-
-size(x)
-length(x)
-```
-
----
-
-## 🧹 Clean Workspace
-
-Limpar ambiente de trabalho.
-
-```matlab
-clear;
-clc;
-close all;
-```
-
----
-
-## ⚡ Script Template
-
-Template básico para começar scripts.
-
-```matlab
-%% Initialization
+```matlab id="template_adv"
 clear; clc; close all;
 
-%% Parameters
-fs = 1000;
-t = 0:1/fs:1;
+%% Load Data
+data = readtable('sim.csv');
 
-%% Signal
-signal = sin(2*pi*10*t);
+time = data{:,1};
+vin  = data{:,4};
+vout = data{:,6};
+i    = data{:,8};
+
+%% Power
+power = vout .* i;
+P_avg = mean(power);
+E = trapz(time, power);
+
+%% Delay
+threshold = 0.5;
+t_in  = time(find(vin > threshold, 1));
+t_out = time(find(vout > threshold, 1));
+delay = t_out - t_in;
 
 %% Plot
-plot(t, signal);
+plot(time, vin); hold on;
+plot(time, vout);
+legend('Vin', 'Vout');
 grid on;
-title('Signal');
+
+%% Display
+fprintf('Average Power: %.3e W\n', P_avg);
+fprintf('Energy: %.3e J\n', E);
+fprintf('Delay: %.3e s\n', delay);
 ```
